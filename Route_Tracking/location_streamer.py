@@ -11,12 +11,12 @@ port=8081
 
 # Define start and end coordinates
 start = (30.095747626304206, 31.37558410328589)  # AAST
-end = (30.1120, 31.4000)    # Cairo International Airport
+destination = (30.1120, 31.4000)    # Cairo International Airport
 
 
 # Send the request to Open Source Routing Machine (OSRM) API
 response = requests.get(
-    f"http://router.project-osrm.org/route/v1/driving/{start[1]},{start[0]};{end[1]},{end[0]}?overview=full&geometries=geojson"
+    f"http://router.project-osrm.org/route/v1/driving/{start[1]},{start[0]};{destination[1]},{destination[0]}?overview=full&geometries=geojson"
 )
 data = response.json()
 
@@ -35,12 +35,23 @@ async def gps_simulation(websocket):
 
     print(f"Client connected: {websocket.remote_address}")
 
+    start_destination_coordinates = {
+        "coord":{
+            "start": start,
+            "destination": destination,
+        }
+    }
+
+    # Send start and destination coordinates to client
+    await websocket.send(json.dumps(start_destination_coordinates))
+    print(f"Sent: {start_destination_coordinates}")
+
     try:
         for coord in location:
             
             # Sending coordinates to client
             await websocket.send(json.dumps(coord))
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
 
             print(f"Sent: ({coord[0]}, {coord[1]})")
 
