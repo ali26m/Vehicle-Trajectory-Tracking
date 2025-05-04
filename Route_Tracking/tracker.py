@@ -48,10 +48,10 @@ def is_over_speed(lat1, lon1, time1, lat2, lon2, time2, speed_limit=100, distanc
     # If the speed is greater than the speed limit and the distance is greater than the distance limit, it's overspeeding
     if speed > speed_limit:
         if distance < distance_limit:
-            print("Unrealistic high speed over short distance")
+            # print("Unrealistic high speed over short distance")
             is_overspeed = True
         else:
-            print("overspeeding")
+            # print("overspeeding")
             is_overspeed = True
     else:
         is_overspeed = False
