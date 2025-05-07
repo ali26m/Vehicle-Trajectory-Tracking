@@ -1,4 +1,5 @@
 import googlemaps
+import requests
 import asyncio
 import websockets
 import json
@@ -6,12 +7,42 @@ import traceback
 from datetime import datetime
 from math import radians, cos, sin, sqrt, atan2
 from dotenv import dotenv_values
+import pickle
+# import shap
+import numpy as np
 
-Maps_API_KEY = dotenv_values("C:\\Users\\alihi\\ipynb\\Vehicle-Trajectory-Tracking\\Route_Tracking\\.env")
+# Load encoders
+with open('Anomaly_Detection/Encoders/time_of_day_encoder.pkl', 'rb') as f:
+    time_encoder = pickle.load(f)
+with open('Anomaly_Detection/Encoders/traffic_condition_encoder.pkl', 'rb') as f:
+    traffic_encoder = pickle.load(f)
+with open('Anomaly_Detection/Encoders/road_type_encoder.pkl', 'rb') as f:
+    road_encoder = pickle.load(f)
+with open('Anomaly_Detection/Encoders/weather_conditions_encoder.pkl', 'rb') as f:
+    weather_encoder = pickle.load(f)
 
-gmaps = googlemaps.Client(key=Maps_API_KEY["Maps_API_KEY"])
+# Load trained Decision Tree model
+with open('Anomaly_Detection/Models/decision_Tree_classifier.pkl', 'rb') as f:
+    tree_model = pickle.load(f)
+    
+    # Initialize SHAP TreeExplainer once
+    # explainer = shap.TreeExplainer(tree_model)
+
+secrets = dotenv_values("C:\\Users\\alihi\\ipynb\\Vehicle-Trajectory-Tracking\\Route_Tracking\\.env")
+
+gmaps = googlemaps.Client(key=secrets["Maps_API_KEY"])
 
 eta, distance, ideal_coordinate = 0, 0, []
+
+def get_time_of_day(hour):
+    if 5 <= hour < 12:
+        return 'Morning'
+    elif 12 <= hour < 17:
+        return 'Afternoon'
+    elif 17 <= hour < 21:
+        return 'Evening'
+    else:
+        return 'Night'
 
 # Calculate distance between two lat/lon points (in kilometers)
 def haversine(lat1, lon1, lat2, lon2):
@@ -40,7 +71,7 @@ def calculate_speed_distance(lat1, lon1, time1, lat2, lon2, time2):
 
     return speed, distance_km, time_diff_hours
 
-def is_over_speed(lat1, lon1, time1, lat2, lon2, time2, speed_limit=100, distance_limit=0.05):# 0.05 km = 50 meters
+def is_over_speed(lat1, lon1, time1, lat2, lon2, time2, speed_limit=130, distance_limit=0.05):# 0.05 km = 50 meters
 
     speed, distance, time_diff = calculate_speed_distance(lat1, lon1, time1, lat2, lon2, time2)
 
@@ -74,7 +105,13 @@ def get_route_ETA(start, destination):
 
         # Get directions from Google Maps API
         # Use 'driving' for driving directions. 'now' for traffic-based ETA
-        directions_result = gmaps.directions(start, destination, mode="driving", departure_time="now")
+        directions_result = gmaps.directions(
+            origin=start,
+            destination=destination,
+            mode="driving",
+            departure_time="now",  # Needed for traffic info
+            traffic_model="best_guess"
+        )
 
         if directions_result:
 
@@ -87,6 +124,46 @@ def get_route_ETA(start, destination):
             # Extract the ETA and distance from the leg
             eta = leg['duration']['value'] # In seconds
             distance = leg['distance']['value'] # In meters
+
+            # Get the traffic condition based on the ETA with and without traffic
+            eta_with_traffic = leg.get('duration_in_traffic', {}).get('value')
+            if eta_with_traffic and eta:
+                traffic_ratio = eta_with_traffic / eta
+
+                if traffic_ratio <= 1.2:
+                    traffic_condition = "Light"
+                elif traffic_ratio <= 1.5:
+                    traffic_condition = "Moderate"
+                else:
+                    traffic_condition = "Heavy"
+
+            #get the road type based on the instructions
+            for step in leg['steps']:
+                instruction = step['html_instructions'].lower()
+                
+                if 'highway' in instruction or 'freeway' in instruction or 'expressway' in instruction:
+                    road_type = 'Highway'
+                elif 'st' in instruction or 'rd' in instruction or 'ave' in instruction:
+                    road_type = 'Urban'
+                else:
+                    road_type = 'Rural'
+
+                # get weather condition based on the instructions
+                url = f"https://api.weatherapi.com/v1/current.json?key={secrets["weather_API_KEY"]}&q={start[0]},{start[1]}"
+                response = requests.get(url)
+                data = response.json()
+                condition_text = data['current']['condition']['text']
+                condition_text = condition_text.lower()
+
+                # map weather conditions to categories
+                if 'fog' in condition_text or 'mist' in condition_text or 'haze' in condition_text:
+                    weather_condition = 'Foggy'
+                elif 'rain' in condition_text or 'drizzle' in condition_text or 'shower' in condition_text:
+                    weather_condition = 'Rainy'
+                elif 'cloud' in condition_text or 'overcast' in condition_text:
+                    weather_condition = 'Cloudy'
+                elif 'sun' in condition_text or 'clear' in condition_text:
+                    weather_condition = 'Sunny'
 
 
             # Decode the polyline to get the route coordinates
@@ -104,13 +181,13 @@ def get_route_ETA(start, destination):
             #     print(coord)
 
             # Save the data to a text file for later use
-            with open('ideal_coordinate.txt', 'w') as f:
-                for item in ideal_coordinate:
-                    f.write(f"{item}\n")
-            with open('distance.txt', 'w') as f:
-                f.write(f"{distance}\n")
-            with open('eta.txt', 'w') as f:
-                f.write(f"{eta}\n")
+            # with open('ideal_coordinate.txt', 'w') as f:
+            #     for item in ideal_coordinate:
+            #         f.write(f"{item}\n")
+            # with open('distance.txt', 'w') as f:
+            #     f.write(f"{distance}\n")
+            # with open('eta.txt', 'w') as f:
+            #     f.write(f"{eta}\n")
 
         else:
             print(f"Could not find a route between '{start}' and '{destination}'")
@@ -120,7 +197,7 @@ def get_route_ETA(start, destination):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 
-    return eta, distance, ideal_coordinate
+    return eta, distance, traffic_condition, road_type, weather_condition, ideal_coordinate
 
 
 async def gps_tracker():
@@ -147,7 +224,7 @@ async def gps_tracker():
                         print(f"Destination: {destination}")
 
                         # uncomment when finished testing
-                        eta, distance, ideal_coordinate = get_route_ETA(start, destination)
+                        eta, distance, traffic_condition, road_type, weather_condition, ideal_coordinate = get_route_ETA(start, destination)
 
                         # Uncomment to read from text
                         # Read eta, distance, and ideal_coordinate from text files
@@ -176,9 +253,70 @@ async def gps_tracker():
                             print(f"Time difference: {time_diff * 60 * 60} seconds")
                             print(f"Distance: {distance * 1000:.3f} m")
                             print(f"Speed: {speed:.3f} km/h")
-                            print(f"Deviance: {deviance}")
+                            print(f"Deviance: {deviance}") # route anomaly
+                            print(f"Time of the day: {get_time_of_day(time.hour)}")
                             print(f"Is overspeeding: {is_overspeed}")
+                            print(f"Traffic condition: {traffic_condition}")
+                            print(f"Road type: {road_type}")
+                            print(f"Weather condition: {weather_condition}")
                             print("====================================")
+
+                            # Prepare the data for prediction
+                            encoded_time = time_encoder.transform([get_time_of_day(time.hour)])[0]
+                            encoded_traffic = traffic_encoder.transform([traffic_condition])[0]
+                            encoded_road = road_encoder.transform([road_type])[0]
+                            encoded_weather = weather_encoder.transform([weather_condition])[0]
+
+                            # Prepare input features for model
+                            features = np.array([[
+                                speed,
+                                eta,
+                                distance,
+                                encoded_weather,
+                                encoded_road,
+                                encoded_traffic,
+                                encoded_time,
+                                int(deviance),
+                            ]])
+
+                            # Make prediction
+                            prediction = tree_model.predict(features)[0]
+
+                            if prediction == 1:
+                                print("======Suspicious activity detected======")
+
+                                # # For binary classification or regression (your case)
+                                # shap_values = explainer.shap_values(features)  # returns (1, n_features)
+                                # sample_shap_values = shap_values[0]  # First (and only) sample
+
+                                # # Feature names (make sure order matches features)
+                                # feature_names = [
+                                #     "speed", 
+                                #     "eta", 
+                                #     "distance", 
+                                #     "weather_condition", 
+                                #     "road_type", 
+                                #     "traffic_condition", 
+                                #     "time_of_day", 
+                                #     "deviance"
+                                # ]
+
+                                # # Identify and display positive contributing features
+                                # print("🔍 XAI: SHAP Explanation - Features that contributed to suspicious prediction:")
+                                # contributing_features = [
+                                #     (name, val.item()) for name, val in zip(feature_names, sample_shap_values) if val.item() > 0
+                                # ]
+
+                                # contributing_features.sort(key=lambda x: x[1], reverse=True)
+
+                                # if contributing_features:
+                                #     for name, value in contributing_features:
+                                #         print(f"  {name}: +{value:.4f}")
+                                # else:
+                                #     print("  No feature strongly contributed to the suspicious prediction.")
+
+
+
 
                         # Update previous location and time
                         prev_lat, prev_lon, prev_time = lat, lon, time
@@ -196,10 +334,6 @@ async def gps_tracker():
     except Exception as e:
         print(f"Failed to connect or crashed: {e}")
         traceback.print_exc()
-    # finally:
-        # print(eta, distance)
-        # for i, coord in enumerate(ideal_coordinate[0:10]):
-        #     print(i, coord)
 
 # For testing 
 # get_route_ETA((30.095747626304206, 31.37558410328589), (30.11484871023897, 31.38052118309438))
