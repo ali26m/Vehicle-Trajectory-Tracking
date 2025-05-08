@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Trip Event Predictor</title>
+  </head>
+  <body>
+    <h1>Trip Event Predictor</h1>
+
+    <form id="predict-form">
+      <label>Speed:</label>
+      <input name="speed" required /><br /><br />
+
+      <label>ETA:</label>
+      <input name="eta" required /><br /><br />
+
+      <label>Distance:</label>
+      <input name="distance" required /><br /><br />
+
+      <label>Weather:</label>
+      <select name="weather" required>
+        <option value="Sunny">Sunny</option>
+        <option value="Rainy">Rainy</option>
+        <option value="Cloudy">Cloudy</option></select
+      ><br /><br />
+
+      <label>Road Type:</label>
+      <select name="road" required>
+        <option value="Urban">Urban</option>
+        <option value="Highway">Highway</option></select
+      ><br /><br />
+
+      <label>Traffic:</label>
+      <select name="traffic" required>
+        <option value="Light">Light</option>
+        <option value="Moderate">Moderate</option>
+        <option value="Heavy">Heavy</option></select
+      ><br /><br />
+
+      <label>Time of Day:</label>
+      <select name="time_of_day" required>
+        <option value="Morning">Morning</option>
+        <option value="Afternoon">Afternoon</option>
+        <option value="Evening">Evening</option>
+        <option value="Night">Night</option></select
+      ><br /><br />
+
+      <label>Deviance (0 or 1):</label>
+      <input
+        type="number"
+        name="deviance"
+        min="0"
+        max="1"
+        required /><br /><br />
+
+      <button type="submit">Predict</button>
+    </form>
+
+    <div id="result" style="margin-top: 20px"></div>
+
+    <script>
+      document
+        .getElementById("predict-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const formData = new FormData(e.target);
+          const data = {
+            speed: parseFloat(formData.get("speed")),
+            eta: parseFloat(formData.get("eta")),
+            distance: parseFloat(formData.get("distance")),
+            weather: formData.get("weather"),
+            road: formData.get("road"),
+            traffic: formData.get("traffic"),
+            time_of_day: formData.get("time_of_day"),
+            deviance: parseInt(formData.get("deviance")),
+          };
+
+          try {
+            const res = await fetch("http://127.0.0.1:8000/predict", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(data),
+            });
+
+            const result = await res.json();
+            const resultDiv = document.getElementById("result");
+
+            if (res.ok) {
+              resultDiv.innerHTML = `<strong>Prediction:</strong> ${result.prediction} - ${result.message}`;
+            } else {
+              resultDiv.innerHTML = `<span style="color:red;">Error: ${result.detail}</span>`;
+            }
+          } catch (err) {
+            document.getElementById(
+              "result"
+            ).innerHTML = `<span style="color:red;">Failed to contact server.</span>`;
+          }
+        });
+    </script>
+  </body>
+</html>

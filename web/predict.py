@@ -1,11 +1,9 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware  # <-- CORS import
 from pydantic import BaseModel
 import pickle
 import uvicorn
 
-# ========== Load Encoders and Model ==========
-
+# === Load Encoders and Model ===
 try:
     with open('../Anomaly_Detection/Encoders/time_of_day_encoder.pkl', 'rb') as f:
         time_encoder = pickle.load(f)
@@ -21,21 +19,7 @@ except Exception as e:
     print(f"Error loading models or encoders: {e}")
     raise e
 
-# ========== Create FastAPI App ==========
-
-app = FastAPI(title="Anomaly Detection API", version="1.0")
-
-# ========== CORS Middleware Setup ==========
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5500"],  # Allow frontend origin
-    allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods (POST, GET, etc.)
-    allow_headers=["*"],
-)
-
-# ========== Define Request Schema ==========
-
+# === Request Schema ===
 class PredictionRequest(BaseModel):
     speed: float
     eta: float
@@ -46,7 +30,8 @@ class PredictionRequest(BaseModel):
     time_of_day: str
     deviance: int
 
-# ========== Routes ==========
+# === FastAPI App ===
+app = FastAPI(title="Anomaly Detection API", version="1.0")
 
 @app.get("/")
 def root():
@@ -55,13 +40,26 @@ def root():
 @app.post("/predict")
 def predict(request: PredictionRequest):
     try:
-        # Encode input categorical features
+        # Validate categorical values against trained encoder classes
+        for label, val, encoder in [
+            ("weather", request.weather, weather_encoder),
+            ("road", request.road, road_encoder),
+            ("traffic", request.traffic, traffic_encoder),
+            ("time_of_day", request.time_of_day, time_encoder)
+        ]:
+            if val not in encoder.classes_:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid {label} value '{val}'. Must be one of {list(encoder.classes_)}"
+                )
+
+        # Encode categorical values
         encoded_weather = weather_encoder.transform([request.weather])[0]
         encoded_road = road_encoder.transform([request.road])[0]
         encoded_traffic = traffic_encoder.transform([request.traffic])[0]
         encoded_time = time_encoder.transform([request.time_of_day])[0]
 
-        # Create feature vector
+        # Prepare feature vector
         features = [
             request.speed,
             request.eta,
@@ -73,7 +71,6 @@ def predict(request: PredictionRequest):
             request.deviance
         ]
 
-        # Make prediction
         prediction = tree_model.predict([features])[0]
 
         return {
@@ -84,7 +81,6 @@ def predict(request: PredictionRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Prediction failed: {str(e)}")
 
-# ========== Run with Uvicorn ==========
-
+# === Run Server ===
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("predict:app", host="127.0.0.1", port=8000, reload=True)
