@@ -10,20 +10,21 @@ from dotenv import dotenv_values
 import pickle
 # import shap
 import numpy as np
+import httpx
 
-# Load encoders
-with open('Anomaly_Detection/Encoders/time_of_day_encoder.pkl', 'rb') as f:
-    time_encoder = pickle.load(f)
-with open('Anomaly_Detection/Encoders/traffic_condition_encoder.pkl', 'rb') as f:
-    traffic_encoder = pickle.load(f)
-with open('Anomaly_Detection/Encoders/road_type_encoder.pkl', 'rb') as f:
-    road_encoder = pickle.load(f)
-with open('Anomaly_Detection/Encoders/weather_conditions_encoder.pkl', 'rb') as f:
-    weather_encoder = pickle.load(f)
+# # Load encoders
+# with open('Anomaly_Detection/Encoders/time_of_day_encoder.pkl', 'rb') as f:
+#     time_encoder = pickle.load(f)
+# with open('Anomaly_Detection/Encoders/traffic_condition_encoder.pkl', 'rb') as f:
+#     traffic_encoder = pickle.load(f)
+# with open('Anomaly_Detection/Encoders/road_type_encoder.pkl', 'rb') as f:
+#     road_encoder = pickle.load(f)
+# with open('Anomaly_Detection/Encoders/weather_conditions_encoder.pkl', 'rb') as f:
+#     weather_encoder = pickle.load(f)
 
-# Load trained Decision Tree model
-with open('Anomaly_Detection/Models/decision_Tree_classifier.pkl', 'rb') as f:
-    tree_model = pickle.load(f)
+# # Load trained Decision Tree model
+# with open('Anomaly_Detection/Models/decision_Tree_classifier.pkl', 'rb') as f:
+#     tree_model = pickle.load(f)
     
     # Initialize SHAP TreeExplainer once
     # explainer = shap.TreeExplainer(tree_model)
@@ -247,6 +248,7 @@ async def gps_tracker():
                             
                             time_diff, distance, speed, is_overspeed = is_over_speed(prev_lat, prev_lon, prev_time, lat, lon, time)
                             deviance = is_off_route(lat, lon, ideal_coordinate)
+                            time_of_day_str = get_time_of_day(time.hour)
                             
                             print("====================================")
                             print(f"location= {location["route_coord"]}, time= {time}")
@@ -262,58 +264,48 @@ async def gps_tracker():
                             print("====================================")
 
                             # Prepare the data for prediction
-                            encoded_time = time_encoder.transform([get_time_of_day(time.hour)])[0]
-                            encoded_traffic = traffic_encoder.transform([traffic_condition])[0]
-                            encoded_road = road_encoder.transform([road_type])[0]
-                            encoded_weather = weather_encoder.transform([weather_condition])[0]
+                            # encoded_time = time_encoder.transform([get_time_of_day(time.hour)])[0]
+                            # encoded_traffic = traffic_encoder.transform([traffic_condition])[0]
+                            # encoded_road = road_encoder.transform([road_type])[0]
+                            # encoded_weather = weather_encoder.transform([weather_condition])[0]
 
-                            # Prepare input features for model
-                            features = np.array([[
-                                speed,
-                                eta,
-                                distance,
-                                encoded_weather,
-                                encoded_road,
-                                encoded_traffic,
-                                encoded_time,
-                                int(deviance),
-                            ]])
+                            # # Prepare input features for model
+                            # features = np.array([[
+                            #     speed,
+                            #     eta,
+                            #     distance,
+                            #     encoded_weather,
+                            #     encoded_road,
+                            #     encoded_traffic,
+                            #     encoded_time,
+                            #     int(deviance),
+                            # ]])
 
                             # Make prediction
-                            prediction = tree_model.predict(features)[0]
+                            # prediction = tree_model.predict(features)[0]
 
-                            if prediction == 1:
-                                print("======Suspicious activity detected======")
+                            # if prediction == 1:
+                            #     print("======Suspicious activity detected======")
 
-                                # # For binary classification or regression (your case)
-                                # shap_values = explainer.shap_values(features)  # returns (1, n_features)
-                                # sample_shap_values = shap_values[0]  # First (and only) sample
+                            payload = {
+                                "speed": speed,
+                                "eta": eta,
+                                "distance": distance,
+                                "weather": weather_condition,
+                                "road": road_type,
+                                "traffic": traffic_condition,
+                                "time_of_day": time_of_day_str,
+                                "deviance": int(deviance)
+                            }
 
-                                # # Feature names (make sure order matches features)
-                                # feature_names = [
-                                #     "speed", 
-                                #     "eta", 
-                                #     "distance", 
-                                #     "weather_condition", 
-                                #     "road_type", 
-                                #     "traffic_condition", 
-                                #     "time_of_day", 
-                                #     "deviance"
-                                # ]
+                            async with httpx.AsyncClient() as client:
+                                response = await client.post("http://127.0.0.1:8000/predict", json=payload)
 
-                                # # Identify and display positive contributing features
-                                # print("🔍 XAI: SHAP Explanation - Features that contributed to suspicious prediction:")
-                                # contributing_features = [
-                                #     (name, val.item()) for name, val in zip(feature_names, sample_shap_values) if val.item() > 0
-                                # ]
-
-                                # contributing_features.sort(key=lambda x: x[1], reverse=True)
-
-                                # if contributing_features:
-                                #     for name, value in contributing_features:
-                                #         print(f"  {name}: +{value:.4f}")
-                                # else:
-                                #     print("  No feature strongly contributed to the suspicious prediction.")
+                            if response.status_code == 200:
+                                result = response.json()
+                                print(f"🚨 Prediction: {result['message']} (Label={result['prediction']})")
+                            else:
+                                print(f"❌ Prediction API error: {response.status_code} - {response.text}")
 
 
 
