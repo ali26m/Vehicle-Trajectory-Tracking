@@ -3,15 +3,49 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>Live Car Tracker</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <style>
+      #map {
+        height: 100vh;
+      }
+    </style>
   </head>
   <body>
-    <iframe
-      title="DAX Bi Course"
-      width="1140"
-      height="541.25"
-      src="https://app.powerbi.com/reportEmbed?reportId=f7ee0fe0-9d35-467c-84b4-d9ad37b2b191&autoAuth=true&ctid=a86ca211-c918-4c77-8b32-440c27aa3100"
-      frameborder="0"
-      allowfullscreen="true"></iframe>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+      // Initialize the map
+      const map = L.map("map").setView([30.095848, 31.3756539], 16); // Set the initial position and zoom level
+
+      // Add OpenStreetMap tile layer
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+      }).addTo(map);
+
+      // Object to store car markers by car_id
+      const markers = {};
+
+      // Replace with the IP or domain of your deployed server
+      const socket = io("http://localhost:5000"); // Your Flask app's local URL
+      // Update this URL with your server's address
+
+      // Listen for location updates from the server
+      socket.on("location_update", (cars) => {
+        cars.forEach(({car_id, latitude, longitude}) => {
+          if (markers[car_id]) {
+            // If the car already has a marker, update its position
+            markers[car_id].setLatLng([latitude, longitude]);
+          } else {
+            // If the car doesn't have a marker, create a new one
+            const marker = L.marker([latitude, longitude]).addTo(map);
+            marker.bindPopup(`Car: ${car_id}`);
+            markers[car_id] = marker; // Store the marker by car_id
+          }
+        });
+      });
+    </script>
   </body>
 </html>

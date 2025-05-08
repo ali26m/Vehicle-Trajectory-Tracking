@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Get Location Every Second</title>
+  </head>
+  <body>
+    <h1>Tracking Location</h1>
+    <button id="start-tracking-btn">Start Tracking</button>
+    <div id="location-display"></div>
+    <!-- Container for location divs -->
+
+    <script>
+      function generateRandomCarId() {
+        const characters =
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; // All possible characters
+        let carId = "";
+        for (let i = 0; i < 10; i++) {
+          // Length of car_id, you can adjust this as needed
+          const randomIndex = Math.floor(Math.random() * characters.length);
+          carId += characters[randomIndex];
+        }
+        return carId;
+      }
+
+      const car_id = generateRandomCarId(); // Example car_id, replace with actual value
+
+      // Function to get the current location and send it to the backend
+      function trackLocation() {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            function (position) {
+              const latitude = position.coords.latitude;
+              const longitude = position.coords.longitude;
+
+              // Create a new div element for this location
+              const locationDiv = document.createElement("div");
+              locationDiv.classList.add("location");
+              locationDiv.innerText = `Latitude: ${latitude}, Longitude: ${longitude}`;
+
+              // Append the new location div below the previous one
+              document
+                .getElementById("location-display")
+                .appendChild(locationDiv);
+
+              // Send the data to your backend server (replace with your server URL)
+              fetch("http://127.0.0.1:5000/track-location", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  car_id: car_id,
+                  latitude: latitude,
+                  longitude: longitude,
+                }),
+              });
+            },
+            function (error) {
+              const locationDiv = document.createElement("div");
+              locationDiv.classList.add("location");
+              locationDiv.innerText =
+                "Error fetching location: " + error.message;
+              document
+                .getElementById("location-display")
+                .appendChild(locationDiv);
+            }
+          );
+        } else {
+          const locationDiv = document.createElement("div");
+          locationDiv.classList.add("location");
+          locationDiv.innerText =
+            "Geolocation is not supported by this browser.";
+          document.getElementById("location-display").appendChild(locationDiv);
+        }
+      }
+
+      // Start the tracking every second when the button is clicked
+      document
+        .getElementById("start-tracking-btn")
+        .addEventListener("click", function () {
+          setInterval(trackLocation, 1000); // Fetch location every 1 second
+        });
+    </script>
+  </body>
+</html>
