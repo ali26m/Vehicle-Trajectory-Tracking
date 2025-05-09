@@ -4,7 +4,8 @@ from pymongo import MongoClient
 from datetime import datetime
 
 # Load coordinates from the JSON file
-with open('../data/route_coords.json') as f:
+# with open('C:\\Users\\alihi\\ipynb\\Vehicle-Trajectory-Tracking\\Data\\Location and maps data\\route_coords.json') as f:
+with open('..\\Data\\Location and maps data\\route_coords.json') as f:
     data = json.load(f)
 coordinates = data['coordinates']
 

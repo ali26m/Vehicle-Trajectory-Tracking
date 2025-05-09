@@ -13,7 +13,7 @@ port=8081
 start = [30.095747626304206, 31.37558410328589]  # GIS AAST
 destination = [30.0976405, 31.3717443]    # AAST Clinic
 
-with open('DataSet/Location and maps data/route_coords.json', 'r') as file:
+with open('../Data/Location and maps data/route_coords.json', 'r') as file:
     route_coords = json.load(file)
 
 # Step 2: Extract the coordinates list

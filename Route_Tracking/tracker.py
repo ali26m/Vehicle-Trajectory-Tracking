@@ -303,9 +303,9 @@ async def gps_tracker():
 
                             if response.status_code == 200:
                                 result = response.json()
-                                print(f"🚨 Prediction: {result['message']} (Label={result['prediction']})")
+                                print(f"Prediction: {result['message']} (Label={result['prediction']})")
                             else:
-                                print(f"❌ Prediction API error: {response.status_code} - {response.text}")
+                                print(f"Prediction API error: {response.status_code} - {response.text}")
 
 
 

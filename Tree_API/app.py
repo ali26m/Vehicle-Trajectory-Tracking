@@ -7,15 +7,16 @@ import uvicorn
 # ========== Load Encoders and Model ==========
 
 try:
-    with open('../Anomaly_Detection/Encoders/time_of_day_encoder.pkl', 'rb') as f:
+    # with open('C:\\Users\\alihi\\ipynb\\Vehicle-Trajectory-Tracking\\Machine_Learning_Model\\Encoders\\time_of_day_encoder.pkl', 'rb') as f:
+    with open('..\\Machine_Learning_Model\\Encoders\\time_of_day_encoder.pkl', 'rb') as f:
         time_encoder = pickle.load(f)
-    with open('../Anomaly_Detection/Encoders/traffic_condition_encoder.pkl', 'rb') as f:
+    with open('..\\Machine_Learning_Model\\Encoders\\traffic_condition_encoder.pkl', 'rb') as f:
         traffic_encoder = pickle.load(f)
-    with open('../Anomaly_Detection/Encoders/road_type_encoder.pkl', 'rb') as f:
+    with open('..\\Machine_Learning_Model\\Encoders\\road_type_encoder.pkl', 'rb') as f:
         road_encoder = pickle.load(f)
-    with open('../Anomaly_Detection/Encoders/weather_conditions_encoder.pkl', 'rb') as f:
+    with open('..\\Machine_Learning_Model\\Encoders\\weather_conditions_encoder.pkl', 'rb') as f:
         weather_encoder = pickle.load(f)
-    with open('../Anomaly_Detection/Models/decision_Tree_classifier.pkl', 'rb') as f:
+    with open('..\\Machine_Learning_Model\\Models\\decision_Tree_classifier.pkl', 'rb') as f:
         tree_model = pickle.load(f)
 except Exception as e:
     print(f"Error loading models or encoders: {e}")
