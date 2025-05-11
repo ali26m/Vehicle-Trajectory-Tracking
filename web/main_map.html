@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Car Tracker</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <a href="predict.html">Predict Page</a>
+      <a href="main_map.html">Map Page</a>
+      <a href="powerbi.html">Power BI Page</a>
+    </div>
+
+    <!-- Toggle Button -->
+    <button class="sidebar-toggle" id="toggle-btn">☰</button>
+
+    <!-- Main Content -->
+    <div class="content">
+      <h2>Live Car Tracker Map</h2>
+      <div id="map" style="height: 50vh"></div>
+    </div>
+
+    <!-- Chatbot -->
+    <iframe
+      class="chatbot"
+      src="https://app.vectorshift.ai/chatbots/embedded/681c634aee90523eb920790f?openChatbot=true"
+      width="500px"
+      height="600px"
+      allow="clipboard-read; clipboard-write; microphone">
+    </iframe>
+
+    <!-- Scripts -->
+    <script>
+      const toggleBtn = document.getElementById("toggle-btn");
+      const sidebar = document.getElementById("sidebar");
+
+      toggleBtn.addEventListener("click", () => {
+        sidebar.classList.toggle("closed");
+        toggleBtn.classList.toggle("closed");
+      });
+
+      const map = L.map("map").setView([30.095848, 31.3756539], 16);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+      }).addTo(map);
+
+      const markers = {};
+      const socket = io("http://localhost:5000");
+
+      socket.on("location_update", (cars) => {
+        cars.forEach(({car_id, latitude, longitude}) => {
+          if (markers[car_id]) {
+            markers[car_id].setLatLng([latitude, longitude]);
+          } else {
+            const marker = L.marker([latitude, longitude]).addTo(map);
+            marker.bindPopup(`Car: ${car_id}`);
+            markers[car_id] = marker;
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

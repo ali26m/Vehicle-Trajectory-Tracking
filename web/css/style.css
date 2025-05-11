@@ -1,0 +1,72 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f0f4f8;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 220px;
+  height: 100%;
+  background-color: #003366;
+  color: #fff;
+  transition: transform 0.3s ease;
+  padding-top: 60px;
+  z-index: 1000;
+}
+
+.sidebar a {
+  display: block;
+  padding: 15px 20px;
+  text-decoration: none;
+  color: #fff;
+  transition: background-color 0.2s;
+}
+
+.sidebar a:hover {
+  background-color: #00509e;
+}
+
+.sidebar-toggle {
+  position: fixed;
+  top: 15px;
+  left: 223px;
+  background-color: #003366;
+  color: #fff;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  z-index: 1001;
+}
+
+.sidebar.closed {
+  transform: translateX(-100%);
+}
+
+.sidebar-toggle.closed {
+  left: 10px;
+}
+
+.content {
+  margin-left: 240px;
+  padding: 20px;
+  transition: margin-left 0.3s ease;
+}
+
+.sidebar.closed ~ .content {
+  margin-left: 20px;
+}
+
+iframe.chatbot {
+  border: none;
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  margin: 10px;
+  z-index: 9999;
+}
+#map {
+  height: 80vh;
+}
