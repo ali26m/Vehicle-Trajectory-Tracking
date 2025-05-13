@@ -12,8 +12,8 @@ mongo_uri = 'mongodb+srv://abdelrahmanibrahim425:boodyabdo@cluster0.pqexzns.mong
 client = MongoClient(mongo_uri)
 
 # Database and Collection
-db = client['Tracking']  # Replace with your actual database name
-cars_collection = db['Trips']  # Replace with your collection name
+db = client['Tracking'] 
+cars_collection = db['Trips']  
 
 def emit_locations():
     while True:
