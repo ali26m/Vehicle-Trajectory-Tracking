@@ -331,3 +331,8 @@ async def gps_tracker():
 # get_route_ETA((30.095747626304206, 31.37558410328589), (30.11484871023897, 31.38052118309438))
 
 asyncio.run(gps_tracker())
+
+# streamer: python "C:\Users\alihi\ipynb\Vehicle-Trajectory-Tracking\Route_Tracking\location_streamer.py"
+# fastapi: python "C:\Users\alihi\ipynb\Vehicle-Trajectory-Tracking\Tree_API\app.py"
+# tracker: python "C:\Users\alihi\ipynb\Vehicle-Trajectory-Tracking\Route_Tracking\tracker.py"
+# 

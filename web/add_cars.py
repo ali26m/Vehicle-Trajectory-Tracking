@@ -45,3 +45,6 @@ while True:
 
     i += 1
     time.sleep(2)
+
+# add_cars: python "C:\Users\alihi\ipynb\Vehicle-Trajectory-Tracking\web\add_cars.py"
+# viz_car: python "C:\Users\alihi\ipynb\Vehicle-Trajectory-Tracking\web\viz_car.py"
