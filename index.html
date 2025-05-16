@@ -4,29 +4,93 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Get Location Every Second</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f9f9f9;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+      }
+
+      h1 {
+        text-align: center;
+        color: #2c3e50;
+      }
+
+      .button-container {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        margin: 0 10px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      #start-tracking-btn {
+        background-color: #3498db;
+        color: white;
+      }
+
+      #start-tracking-btn:hover {
+        background-color: #2980b9;
+      }
+
+      #stop-tracking-btn {
+        background-color: #e74c3c;
+        color: white;
+      }
+
+      #stop-tracking-btn:hover {
+        background-color: #c0392b;
+      }
+
+      #location-display {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 10px;
+      }
+
+      .location {
+        background-color: #ffffff;
+        padding: 10px;
+        margin-bottom: 8px;
+        border-left: 5px solid #2ecc71;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        border-radius: 4px;
+      }
+    </style>
   </head>
   <body>
     <h1>Tracking Location</h1>
-    <button id="start-tracking-btn">Start Tracking</button>
+    <div class="button-container">
+      <button id="start-tracking-btn">Start Tracking</button>
+      <button id="stop-tracking-btn">Stop Tracking</button>
+    </div>
     <div id="location-display"></div>
-    <!-- Container for location divs -->
 
     <script>
       function generateRandomCarId() {
         const characters =
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; // All possible characters
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         let carId = "";
         for (let i = 0; i < 10; i++) {
-          // Length of car_id, you can adjust this as needed
           const randomIndex = Math.floor(Math.random() * characters.length);
           carId += characters[randomIndex];
         }
         return carId;
       }
 
-      const car_id = generateRandomCarId(); // Example car_id, replace with actual value
+      const car_id = generateRandomCarId();
 
-      // Function to get the current location and send it to the backend
+      let trackingInterval = null;
+
       function trackLocation() {
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
@@ -34,18 +98,15 @@
               const latitude = position.coords.latitude;
               const longitude = position.coords.longitude;
 
-              // Create a new div element for this location
               const locationDiv = document.createElement("div");
               locationDiv.classList.add("location");
               locationDiv.innerText = `Latitude: ${latitude}, Longitude: ${longitude}`;
 
-              // Append the new location div below the previous one
               document
                 .getElementById("location-display")
                 .appendChild(locationDiv);
 
-              // Send the data to your backend server (replace with your server URL)
-              fetch("http://127.0.0.1:5000/track-location", {
+              fetch("https://get-location-5b6d3fa74446.hosted.ghaymah.systems/track-location", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -76,11 +137,21 @@
         }
       }
 
-      // Start the tracking every second when the button is clicked
       document
         .getElementById("start-tracking-btn")
         .addEventListener("click", function () {
-          setInterval(trackLocation, 1000); // Fetch location every 1 second
+          if (!trackingInterval) {
+            trackingInterval = setInterval(trackLocation, 1000);
+          }
+        });
+
+      document
+        .getElementById("stop-tracking-btn")
+        .addEventListener("click", function () {
+          if (trackingInterval) {
+            clearInterval(trackingInterval);
+            trackingInterval = null;
+          }
         });
     </script>
   </body>

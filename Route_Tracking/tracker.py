@@ -7,27 +7,8 @@ import traceback
 from datetime import datetime
 from math import radians, cos, sin, sqrt, atan2
 from dotenv import dotenv_values
-import pickle
-# import shap
-import numpy as np
 import httpx
 
-# # Load encoders
-# with open('Anomaly_Detection/Encoders/time_of_day_encoder.pkl', 'rb') as f:
-#     time_encoder = pickle.load(f)
-# with open('Anomaly_Detection/Encoders/traffic_condition_encoder.pkl', 'rb') as f:
-#     traffic_encoder = pickle.load(f)
-# with open('Anomaly_Detection/Encoders/road_type_encoder.pkl', 'rb') as f:
-#     road_encoder = pickle.load(f)
-# with open('Anomaly_Detection/Encoders/weather_conditions_encoder.pkl', 'rb') as f:
-#     weather_encoder = pickle.load(f)
-
-# # Load trained Decision Tree model
-# with open('Anomaly_Detection/Models/decision_Tree_classifier.pkl', 'rb') as f:
-#     tree_model = pickle.load(f)
-    
-    # Initialize SHAP TreeExplainer once
-    # explainer = shap.TreeExplainer(tree_model)
 
 secrets = dotenv_values("C:\\Users\\alihi\\ipynb\\Vehicle-Trajectory-Tracking\\Route_Tracking\\.env")
 
@@ -263,30 +244,6 @@ async def gps_tracker():
                             print(f"Weather condition: {weather_condition}")
                             print("====================================")
 
-                            # Prepare the data for prediction
-                            # encoded_time = time_encoder.transform([get_time_of_day(time.hour)])[0]
-                            # encoded_traffic = traffic_encoder.transform([traffic_condition])[0]
-                            # encoded_road = road_encoder.transform([road_type])[0]
-                            # encoded_weather = weather_encoder.transform([weather_condition])[0]
-
-                            # # Prepare input features for model
-                            # features = np.array([[
-                            #     speed,
-                            #     eta,
-                            #     distance,
-                            #     encoded_weather,
-                            #     encoded_road,
-                            #     encoded_traffic,
-                            #     encoded_time,
-                            #     int(deviance),
-                            # ]])
-
-                            # Make prediction
-                            # prediction = tree_model.predict(features)[0]
-
-                            # if prediction == 1:
-                            #     print("======Suspicious activity detected======")
-
                             payload = {
                                 "speed": speed,
                                 "eta": eta,
@@ -299,7 +256,7 @@ async def gps_tracker():
                             }
 
                             async with httpx.AsyncClient() as client:
-                                response = await client.post("http://127.0.0.1:8000/predict", json=payload)
+                                response = await client.post("http://127.0.0.1:5500/predict", json=payload)
 
                             if response.status_code == 200:
                                 result = response.json()
@@ -335,4 +292,3 @@ asyncio.run(gps_tracker())
 # streamer: python "C:\Users\alihi\ipynb\Vehicle-Trajectory-Tracking\Route_Tracking\location_streamer.py"
 # fastapi: python "C:\Users\alihi\ipynb\Vehicle-Trajectory-Tracking\Tree_API\app.py"
 # tracker: python "C:\Users\alihi\ipynb\Vehicle-Trajectory-Tracking\Route_Tracking\tracker.py"
-# 

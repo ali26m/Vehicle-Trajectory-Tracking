@@ -27,4 +27,4 @@ def login():
         return jsonify({"success": False, "message": "Invalid username or password."})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=80)
