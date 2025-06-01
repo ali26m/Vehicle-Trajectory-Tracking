@@ -23,7 +23,8 @@
     <!-- Main Content -->
     <div class="content">
       <h2>Live Car Tracker Map</h2>
-      <div id="map" style="height: 50vh"></div>
+      <!-- <div id="map" style="height: 50vh"></div> -->
+      <div id="map"></div>
     </div>
 
     <!-- Chatbot -->
@@ -31,7 +32,7 @@
       class="chatbot"
       src="https://app.vectorshift.ai/chatbots/embedded/681c634aee90523eb920790f?openChatbot=true"
       width="500px"
-      height="600px"
+      height="400px"
       allow="clipboard-read; clipboard-write; microphone">
     </iframe>
 
@@ -51,7 +52,7 @@
       }).addTo(map);
 
       const markers = {};
-      const socket = io("http://localhost:5000");
+      const socket = io("https://tracking-map-67c1f21f4c9e.hosted.ghaymah.systems:5000");
 
       socket.on("location_update", (cars) => {
         cars.forEach(({car_id, latitude, longitude}) => {
