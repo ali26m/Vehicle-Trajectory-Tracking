@@ -18,6 +18,7 @@ A decision support system for real-time vehicle tracking, anomalous events detec
 ---
 
 ## How It Works
+![DSS Arch (1)](https://github.com/user-attachments/assets/f77eac59-7682-4f40-8de6-01bf027963a9)
 
 1. `add_cars.py` reads simulated car routes and adds them to MongoDB.
 2. `send_location.py` sends periodic location updates from the cars.
